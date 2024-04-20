@@ -4,7 +4,7 @@ const fs = require('fs')
 
 // MongoDB connection URL with authentication options
 const url = `${process.env.MONGO_URL}`
-const filename = `${__dirname}/secondChanceItems.json`
+const filename = path.join(__dirname, 'secondChanceItems.json');
 const dbName = 'secondChance'
 const collectionName = 'secondChanceItems'
 
@@ -28,7 +28,7 @@ async function loadData () {
     const cursor = await collection.find({})
     const documents = await cursor.toArray()
 
-    if (documents.length == 0) {
+    if (documents.length === 0) {
       // Insert data into the collection
       const insertResult = await collection.insertMany(data)
       console.log('Inserted documents:', insertResult.insertedCount)
