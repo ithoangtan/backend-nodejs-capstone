@@ -31,7 +31,7 @@ app.use(pinoHttp({ logger }));
 // Use Routes
 app.use('/api/auth', authRoutes); // Assuming this needs to be added as well
 app.use('/api/secondchance/items', secondChanceItemsRoutes); // Task 2
-app.use('/api/search', searchRoutes); // Assuming this needs to be added as well
+app.use('/api/secondchance/search', searchRoutes); // Assuming this needs to be added as well
 
 // Global Error Handler
 app.use((err, req, res, next) => {
