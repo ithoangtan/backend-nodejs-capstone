@@ -1,5 +1,5 @@
 const express = require('express');
-const bcryptjs = require('bcryptjs');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const connectToDatabase = require('../models/db');
 const router = express.Router();
@@ -66,21 +66,50 @@ router.post('/register', async (req, res) => {
 
 // Login endpoint
 router.post('/login', async (req, res) => {
-    const user = users.find(u => u.username === req.body.username);
-    if (user == null) {
-        return res.status(400).send('Cannot find user');
-    }
     try {
-        if (await bcrypt.compare(req.body.password, user.password)) {
-            // Generate a token
-            const accessToken = jwt.sign({ username: user.username }, process.env.ACCESS_TOKEN_SECRET);
-            res.json({ accessToken: accessToken });
-        } else {
-            res.send('Not Allowed');
+        // Task 1: Connect to `secondChance` in MongoDB through `connectToDatabase` in `db.js`.
+        const db = await connectToDatabase();
+
+        // Task 2: Access MongoDB `users` collection
+        const collection = db.collection("users");
+
+        // Task 3: Check for user credentials in the database
+        const theUser = await collection.findOne({ email: req.body.email });
+        if (!theUser) {
+            logger.error('User not found');
+            return res.status(404).json({ error: 'User not found' });
         }
-    } catch (error) {
-        res.status(500).send();
+
+        // Task 4: Check if the password matches the encrypted password
+        const isMatch = await bcrypt.compare(req.body.password, theUser.password);
+        if (!isMatch) {
+            logger.error('Passwords do not match');
+            return res.status(400).json({ error: 'Wrong password' });
+        }
+
+        // Task 5: Fetch user details from the database
+        const userName = theUser.firstName;
+        const userEmail = theUser.email;
+
+        // Task 6: Create JWT authentication if passwords match with user._id as payload
+        const payload = {
+            user: {
+                id: theUser._id.toString(), // Ensure the payload uses the user's _id from MongoDB
+            },
+        };
+        const authtoken = jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' }); // Optionally set an expiration
+
+        // Task 7: Log the successful login
+        logger.info('User logged in successfully');
+
+        // Return the user email and the token as a JSON
+        res.json({ authtoken, userName, userEmail });
+
+    } catch (e) {
+        logger.error(`Login error: ${e}`);
+        return res.status(500).send('Internal server error');
     }
 });
+
 
 module.exports = router;
